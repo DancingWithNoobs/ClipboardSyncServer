@@ -1,0 +1,2 @@
+# ClipboardSyncServer
+ClipboardSyncServer

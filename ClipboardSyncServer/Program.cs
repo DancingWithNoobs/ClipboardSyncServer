@@ -160,7 +160,6 @@ namespace ClipboardSyncServer
             return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
         }
 
-
         public static string GetLocalIPAddress()
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());

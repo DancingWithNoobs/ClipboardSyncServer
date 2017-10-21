@@ -73,7 +73,7 @@ namespace ClipboardSyncServer
 
             try
             {
-                // Set the TcpListener on port 13000.
+                // Set the TcpListener on port 40004.
                 Int32 port = 40004;
                 IPAddress localAddr = IPAddress.Parse(GetLocalIPAddress());
 
@@ -90,7 +90,7 @@ namespace ClipboardSyncServer
                 // Enter the listening loop.
                 while (true)
                 {
-                    Console.Write($"Waiting for a connection on {GetLocalIPAddress()}, port: 40004... ");
+                    Console.Write($"Waiting for a connection on {GetLocalIPAddress()}, port: {port}... ");
 
                     // Perform a blocking call to accept requests.
                     // You could also user server.AcceptSocket() here.

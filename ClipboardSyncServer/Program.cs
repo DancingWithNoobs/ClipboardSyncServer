@@ -24,16 +24,32 @@ namespace ClipboardSyncServer
             Application.Run(new MyCustomApplicationContext());
         }
     }
+
+    enum MessageType
+    {
+        Data,
+        Init
+    }
+
     public class MyCustomApplicationContext : ApplicationContext
     {
         private NotifyIcon trayIcon;
 
         public MyCustomApplicationContext()
         {
-            // Initialize Tray Icon
+            ShowBaloonTip("ClipboardSync", "Clipboard Sync Server is running");
+
+
+            RunAsSTAThread(Listen);
+        }
+
+        private void ShowBaloonTip(string title, string text)
+        {
+// Initialize Tray Icon
             trayIcon = new NotifyIcon()
             {
-                ContextMenu = new ContextMenu(new MenuItem[] {
+                ContextMenu = new ContextMenu(new MenuItem[]
+                {
                     new MenuItem("Exit", Exit)
                 }),
                 Visible = true
@@ -43,16 +59,14 @@ namespace ClipboardSyncServer
                 Visible = true,
                 Icon = System.Drawing.SystemIcons.Application,
                 BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Info,
-                BalloonTipTitle = "Clipboard Sync",
-                BalloonTipText = "Clipboard Sync Server is running",
+                BalloonTipTitle = title,
+                BalloonTipText = text,
             };
 
             // Display for 5 seconds.
             notification.ShowBalloonTip(5000);
-
-
-            RunAsSTAThread(Listen);
         }
+
         static void RunAsSTAThread(Action goForIt)
         {
             AutoResetEvent @event = new AutoResetEvent(false);
@@ -84,8 +98,10 @@ namespace ClipboardSyncServer
                 server.Start();
 
                 // Buffer for reading data
-                Byte[] bytes = new Byte[256];
+                Byte[] bytes = new Byte[2048];
                 String data = null;
+
+                MessageType type = MessageType.Data;
 
                 // Enter the listening loop.
                 while (true)
@@ -121,18 +137,39 @@ namespace ClipboardSyncServer
                                 decoded = data.Substring(7);
                                 decoded = decoded.Substring(0, decoded.Length - 7);
                                 decoded = Base64Decode(decoded);
+
+                                type = MessageType.Data;
+                            }
+                            regex = new Regex(@"(^&INIT&)(.*)(&STOP&$)");
+                            match = regex.Match(data);
+                            if (match.Success)
+                            {
+                                decoded = data.Substring(7);
+                                decoded = decoded.Substring(0, decoded.Length - 7);
+                                decoded = Base64Decode(decoded);
+
+                                type = MessageType.Data;
                             }
                             if (!string.IsNullOrEmpty(decoded))
                             {
-                                Clipboard.SetText(decoded);
+                                if (type == MessageType.Data)
+                                {
+                                    ShowBaloonTip("ClipboardSync", "Received: " + decoded);
+
+                                    Clipboard.SetText(decoded);
+                                }
+                                else if (type == MessageType.Init)
+                                {
+                                    ShowBaloonTip("ClipboardSync", "New device connected: " + decoded);
+                                }
                             }
                             // Process the data sent by the client.
                             data = data.ToUpper();
 
-                            byte[] msg = System.Text.Encoding.ASCII.GetBytes(data);
+                            //byte[] msg = System.Text.Encoding.ASCII.GetBytes(data);
 
                             // Send back a response.
-                            stream.Write(msg, 0, msg.Length);
+                            //stream.Write(msg, 0, msg.Length);
                             Console.WriteLine(String.Format("Ack", data));
                         }
                     }
